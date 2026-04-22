@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Mapa interactivo de las 27 Estaciones de Regulación y Supervisión (ERS) de la Unidad de Industrialización y Petroquímica — ANH Bolivia 2026">
+<meta property="og:title" content="Mapa 27 ERS Bolivia — UIP 2026">
+<meta property="og:description" content="Distribución geográfica de las 27 ERS con técnicos responsables JM, RC y AG">
+<title>Mapa 27 ERS Bolivia — UIP 2026</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f4f8;color:#1a252f;min-height:100vh}
+
+/* HEADER */
+header{background:linear-gradient(135deg,#17202a 0%,#1a3a5c 100%);color:#fff;padding:20px 24px 18px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+.header-text h1{font-size:18px;font-weight:700;letter-spacing:0.3px;margin-bottom:3px}
+.header-text p{font-size:12px;opacity:0.75}
+.header-badge{background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.2);border-radius:20px;padding:5px 14px;font-size:11px;font-weight:600;letter-spacing:0.5px}
+
+/* LAYOUT */
+.container{max-width:1100px;margin:0 auto;padding:20px 16px}
+
+/* STATS */
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px}
+.stat{background:#fff;border-radius:10px;border:1px solid #e2e8f0;padding:16px;text-align:center;transition:transform .15s,box-shadow .15s}
+.stat:hover{transform:translateY(-2px);box-shadow:0 4px 16px rgba(0,0,0,0.09)}
+.stat-icon{font-size:11px;font-weight:700;letter-spacing:1px;margin-bottom:4px;padding:3px 10px;border-radius:12px;display:inline-block}
+.stat-num{font-size:28px;font-weight:700;margin:4px 0 2px}
+.stat-label{font-size:11px;color:#888}
+.jm-icon{background:#d4e6f1;color:#185fa5}
+.rc-icon{background:#fdebd0;color:#854f0b}
+.ag-icon{background:#d5f5e3;color:#27500a}
+
+/* FILTER CONTROLS */
+.controls{background:#fff;border-radius:10px;border:1px solid #e2e8f0;padding:14px 18px;margin-bottom:16px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.controls label{font-size:13px;color:#555;font-weight:500}
+.filter-btn{border:1.5px solid #ddd;background:#f8f9fa;border-radius:20px;padding:5px 14px;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s}
+.filter-btn.active-JM{background:#d4e6f1;border-color:#378ADD;color:#185fa5}
+.filter-btn.active-RC{background:#fdebd0;border-color:#EF9F27;color:#854f0b}
+.filter-btn.active-AG{background:#d5f5e3;border-color:#639922;color:#27500a}
+.filter-btn.active-ALL{background:#17202a;border-color:#17202a;color:#fff}
+.filter-btn:hover{opacity:.85}
+
+/* MAP */
+.map-card{background:#fff;border-radius:12px;border:1px solid #e2e8f0;overflow:hidden;margin-bottom:20px;position:relative}
+.map-header{padding:12px 18px 10px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #f0f4f8}
+.map-header h2{font-size:14px;font-weight:600;color:#2c3e50}
+.legend{display:flex;gap:16px;font-size:12px;color:#666;flex-wrap:wrap}
+.legend-item{display:flex;align-items:center;gap:5px}
+.dot{width:11px;height:11px;border-radius:50%;display:inline-block;border:1.5px solid rgba(0,0,0,0.12)}
+#map-wrap{background:#d6e8f5;position:relative}
+#tooltip{position:absolute;background:#fff;border:1px solid #e0e6ed;border-radius:10px;padding:10px 14px;font-size:12px;pointer-events:none;display:none;z-index:100;box-shadow:0 4px 20px rgba(0,0,0,0.13);min-width:170px;line-height:1.6}
+.tooltip-name{font-size:13px;font-weight:700;margin-bottom:2px}
+.tooltip-sub{font-size:11px;color:#888;margin-bottom:4px}
+.tooltip-coords{font-size:10px;color:#aaa;font-family:monospace}
+.map-footer{padding:8px 18px;background:#f8fafb;border-top:1px solid #f0f4f8;font-size:11px;color:#999;text-align:right}
+
+/* CHARTS */
+.chart-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
+.chart-card{background:#fff;border-radius:10px;border:1px solid #e2e8f0;padding:18px}
+.chart-card h3{font-size:13px;font-weight:600;color:#2c3e50;margin-bottom:14px}
+.chart-wrap{position:relative}
+.custom-legend{display:flex;gap:10px;margin-top:10px;flex-wrap:wrap;font-size:11px;color:#666}
+.custom-legend span{display:flex;align-items:center;gap:4px}
+.sq{width:10px;height:10px;border-radius:2px;display:inline-block}
+
+/* TABLE */
+.table-card{background:#fff;border-radius:10px;border:1px solid #e2e8f0;overflow:hidden;margin-bottom:24px}
+.table-card h2{font-size:14px;font-weight:600;color:#2c3e50;padding:14px 18px;border-bottom:1px solid #f0f4f8}
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{background:#1a3a5c;color:#fff;padding:9px 12px;text-align:left;font-size:11px;font-weight:600;letter-spacing:0.3px;white-space:nowrap}
+td{padding:8px 12px;border-bottom:0.5px solid #f0f4f8;white-space:nowrap}
+tr:nth-child(even) td{background:#f8fafb}
+tr:hover td{background:#eef4fb}
+.tech-badge{display:inline-block;padding:3px 10px;border-radius:12px;font-weight:700;font-size:11px}
+.JM{background:#d4e6f1;color:#185fa5}
+.RC{background:#fdebd0;color:#854f0b}
+.AG{background:#d5f5e3;color:#27500a}
+.ruta-badge{display:inline-block;padding:2px 8px;border-radius:8px;font-size:10px;font-weight:600;background:#f0f4f8;color:#555}
+
+/* FOOTER */
+footer{text-align:center;padding:18px;font-size:11px;color:#aaa;border-top:1px solid #e2e8f0;margin-top:4px}
+
+/* RESPONSIVE */
+@media(max-width:640px){
+  .stats{grid-template-columns:1fr}
+  .chart-grid{grid-template-columns:1fr}
+  header{flex-direction:column;align-items:flex-start}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-text">
+    <h1>Estaciones de Regulación y Supervisión — Bolivia</h1>
+    <p>Agencia Nacional de Hidrocarburos &nbsp;·&nbsp; Unidad de Industrialización y Petroquímica &nbsp;·&nbsp; Gestión 2026</p>
+  </div>
+  <div class="header-badge">27 ERS · 9 Rutas · 3 Técnicos</div>
+</header>
+
+<div class="container">
+
+  <!-- STATS -->
+  <div class="stats">
+    <div class="stat">
+      <div class="stat-icon jm-icon">JM</div>
+      <div class="stat-num" style="color:#185FA5">9</div>
+      <div class="stat-label">Estaciones asignadas</div>
+    </div>
+    <div class="stat">
+      <div class="stat-icon rc-icon">RC</div>
+      <div class="stat-num" style="color:#854F0B">9</div>
+      <div class="stat-label">Estaciones asignadas</div>
+    </div>
+    <div class="stat">
+      <div class="stat-icon ag-icon">AG</div>
+      <div class="stat-num" style="color:#1E8449">9</div>
+      <div class="stat-label">Estaciones asignadas</div>
+    </div>
+  </div>
+
+  <!-- FILTERS -->
+  <div class="controls">
+    <label>Filtrar por técnico:</label>
+    <button class="filter-btn active-ALL" onclick="filterMap('ALL')">Todos (27)</button>
+    <button class="filter-btn" onclick="filterMap('JM')" id="btn-JM">JM (9)</button>
+    <button class="filter-btn" onclick="filterMap('RC')" id="btn-RC">RC (9)</button>
+    <button class="filter-btn" onclick="filterMap('AG')" id="btn-AG">AG (9)</button>
+  </div>
+
+  <!-- MAP -->
+  <div class="map-card">
+    <div class="map-header">
+      <h2>Distribución geográfica de las 27 ERS</h2>
+      <div class="legend">
+        <span class="legend-item"><span class="dot" style="background:#378ADD"></span>JM</span>
+        <span class="legend-item"><span class="dot" style="background:#EF9F27"></span>RC</span>
+        <span class="legend-item"><span class="dot" style="background:#639922"></span>AG</span>
+      </div>
+    </div>
+    <div id="map-wrap">
+      <div id="tooltip">
+        <div class="tooltip-name" id="tt-name"></div>
+        <div class="tooltip-sub" id="tt-sub"></div>
+        <div id="tt-tech"></div>
+        <div class="tooltip-coords" id="tt-coords"></div>
+      </div>
+      <svg id="bolivia-map" width="100%" viewBox="0 0 720 740" style="display:block"></svg>
+    </div>
+    <div class="map-footer">Pasa el cursor sobre un punto para ver detalles &nbsp;·&nbsp; Datos: ANH Bolivia 2026</div>
+  </div>
+
+  <!-- CHARTS -->
+  <div class="chart-grid">
+    <div class="chart-card">
+      <h3>ERS por técnico responsable</h3>
+      <div class="chart-wrap" style="height:200px">
+        <canvas id="barChart" role="img" aria-label="Gráfico de barras: JM=9 ERS, RC=9 ERS, AG=9 ERS">9 ERS por técnico JM, RC y AG.</canvas>
+      </div>
+      <div class="custom-legend">
+        <span><span class="sq" style="background:#378ADD"></span>JM — 9 ERS</span>
+        <span><span class="sq" style="background:#EF9F27"></span>RC — 9 ERS</span>
+        <span><span class="sq" style="background:#639922"></span>AG — 9 ERS</span>
+      </div>
+    </div>
+    <div class="chart-card">
+      <h3>ERS por departamento</h3>
+      <div class="chart-wrap" style="height:220px">
+        <canvas id="deptChart" role="img" aria-label="Gráfico horizontal: ERS por departamento de Bolivia">ERS por departamento de Bolivia.</canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- TABLE -->
+  <div class="table-card">
+    <h2>Listado completo — Coordenadas y técnico asignado</h2>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>#</th><th>ERS</th><th>Departamento</th><th>Latitud</th><th>Longitud</th><th>Técnico</th><th>Ruta</th></tr>
+        </thead>
+        <tbody id="ers-table"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  Agencia Nacional de Hidrocarburos — Unidad de Industrialización y Petroquímica &nbsp;·&nbsp; Gestión 2026
+  &nbsp;·&nbsp; Datos de coordenadas: fuente ANH Bolivia
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+const ERS_DATA = [
+  {name:'Achacachi',             lat:-16.07967,      lon:-68.67226,     tech:'AG', dept:'La Paz',     ruta:'R5'},
+  {name:'Ascención de Guarayos', lat:-15.911839,     lon:-63.168077,    tech:'JM', dept:'Santa Cruz', ruta:'R9'},
+  {name:'Cabezas',               lat:-18.777929,     lon:-63.309289,    tech:'AG', dept:'Santa Cruz', ruta:'R8'},
+  {name:'Caranavi',              lat:-15.831013,     lon:-67.577752,    tech:'JM', dept:'La Paz',     ruta:'R3'},
+  {name:'Challapata',            lat:-18.89162,      lon:-66.767403,    tech:'JM', dept:'Oruro',      ruta:'R6'},
+  {name:'Cobija',                lat:-11.027194,     lon:-68.755613,    tech:'AG', dept:'Pando',      ruta:'R1'},
+  {name:'Copacabana',            lat:-16.167756,     lon:-69.081187,    tech:'AG', dept:'La Paz',     ruta:'R5'},
+  {name:'Coroico',               lat:-16.191717,     lon:-67.729538,    tech:'JM', dept:'La Paz',     ruta:'R3'},
+  {name:'Desaguadero',           lat:-16.56853,      lon:-69.02564,     tech:'RC', dept:'La Paz',     ruta:'R5'},
+  {name:'Guanay',                lat:-15.50074821,   lon:-67.87301905,  tech:'RC', dept:'La Paz',     ruta:'R3'},
+  {name:'Guayaramerín',          lat:-10.80848593,   lon:-65.35205363,  tech:'AG', dept:'Beni',       ruta:'R2'},
+  {name:'Huanuni',               lat:-18.266812,     lon:-66.865518,    tech:'JM', dept:'Oruro',      ruta:'R6'},
+  {name:'Llallagua',             lat:-18.417897,     lon:-66.584918,    tech:'AG', dept:'Potosí',     ruta:'R6'},
+  {name:'Mora',                  lat:-18.45351474,   lon:-63.21410919,  tech:'AG', dept:'Santa Cruz', ruta:'R8'},
+  {name:'Riberalta',             lat:-11.003402,     lon:-66.050262,    tech:'RC', dept:'Beni',       ruta:'R2'},
+  {name:'Roboré',                lat:-18.349082,     lon:-59.75185,     tech:'JM', dept:'Santa Cruz', ruta:'R9'},
+  {name:'Rurrenabaque',          lat:-14.44252762,   lon:-67.48648811,  tech:'RC', dept:'Beni',       ruta:'R3'},
+  {name:'San Borja',             lat:-14.875351,     lon:-66.764451,    tech:'AG', dept:'Beni',       ruta:'R4'},
+  {name:'San Ignacio de Moxos',  lat:-15.00927666,   lon:-65.65593103,  tech:'AG', dept:'Beni',       ruta:'R4'},
+  {name:'San Ignacio de Velasco',lat:-16.36571372,   lon:-60.97118785,  tech:'JM', dept:'Santa Cruz', ruta:'R9'},
+  {name:'San José de Chiquitos', lat:-17.84528489,   lon:-60.72915371,  tech:'JM', dept:'Santa Cruz', ruta:'R9'},
+  {name:'San Julián',            lat:-16.92202931,   lon:-62.62180738,  tech:'RC', dept:'Santa Cruz', ruta:'R8'},
+  {name:'Santa Ana de Yacuma',   lat:-13.75401373,   lon:-65.42977483,  tech:'RC', dept:'Beni',       ruta:'R4'},
+  {name:'Trinidad',              lat:-14.836916,     lon:-64.86209219,  tech:'RC', dept:'Beni',       ruta:'R4'},
+  {name:'Tupiza',                lat:-21.41507972,   lon:-65.71830203,  tech:'RC', dept:'Potosí',     ruta:'R7'},
+  {name:'Uyuni',                 lat:-20.454632,     lon:-66.812062,    tech:'RC', dept:'Potosí',     ruta:'R7'},
+  {name:'Villazón',              lat:-22.075965,     lon:-65.597552,    tech:'JM', dept:'Potosí',     ruta:'R7'},
+];
+
+const COLORS = { JM:'#378ADD', RC:'#EF9F27', AG:'#639922' };
+const COLORS_DARK = { JM:'#185FA5', RC:'#854F0B', AG:'#27500A' };
+
+// Populate table
+const tbody = document.getElementById('ers-table');
+ERS_DATA.forEach((e,i) => {
+  const tr = document.createElement('tr');
+  tr.innerHTML = `<td>${i+1}</td>
+    <td><strong>${e.name}</strong></td>
+    <td>${e.dept}</td>
+    <td style="font-family:monospace;font-size:11px">${e.lat.toFixed(5)}</td>
+    <td style="font-family:monospace;font-size:11px">${e.lon.toFixed(5)}</td>
+    <td><span class="tech-badge ${e.tech}">${e.tech}</span></td>
+    <td><span class="ruta-badge">${e.ruta}</span></td>`;
+  tbody.appendChild(tr);
+});
+
+// Filter state
+let activeFilter = 'ALL';
+let svgCircles = null;
+let svgLabels = null;
+
+function filterMap(tech) {
+  activeFilter = tech;
+  document.querySelectorAll('.filter-btn').forEach(b => {
+    b.className = 'filter-btn';
+  });
+  document.querySelector(`[onclick="filterMap('${tech}')"]`).className = `filter-btn active-${tech}`;
+  if (!svgCircles) return;
+  svgCircles.attr('opacity', d => tech === 'ALL' || d.tech === tech ? 0.9 : 0.08);
+  svgLabels.attr('opacity', d => tech === 'ALL' || d.tech === tech ? 1 : 0.1);
+}
+
+// Map
+const tooltip = document.getElementById('tooltip');
+const mapWrap  = document.getElementById('map-wrap');
+
+d3.json('https://cdn.jsdelivr.net/npm/datamaps@0.5.10/src/js/data/bol.topo.json').then(topo => {
+  const svg = d3.select('#bolivia-map');
+  const W = 720, H = 740;
+  const geo = topojson.feature(topo, topo.objects.bol);
+  const proj = d3.geoMercator().fitExtent([[24, 24], [W-24, H-24]], geo);
+  const path = d3.geoPath(proj);
+
+  // Country fill with department borders
+  svg.append('g').selectAll('path')
+    .data(geo.features)
+    .join('path')
+    .attr('d', path)
+    .attr('fill', '#bdd8ee')
+    .attr('stroke', '#ffffff')
+    .attr('stroke-width', 1.2);
+
+  // Outer border
+  svg.append('path')
+    .datum(topojson.mesh(topo, topo.objects.bol, (a,b) => a === b))
+    .attr('d', path)
+    .attr('fill', 'none')
+    .attr('stroke', '#6fa8cc')
+    .attr('stroke-width', 1.8);
+
+  // ERS labels
+  svgLabels = svg.selectAll('text.lbl')
+    .data(ERS_DATA)
+    .join('text')
+    .attr('class','lbl')
+    .attr('x', d => proj([d.lon, d.lat])[0] + 11)
+    .attr('y', d => proj([d.lon, d.lat])[1] + 4)
+    .attr('font-size', 9)
+    .attr('fill', '#1a252f')
+    .attr('font-family', "'Segoe UI', Arial, sans-serif")
+    .attr('pointer-events', 'none')
+    .text(d => d.name);
+
+  // ERS circles
+  svgCircles = svg.selectAll('circle')
+    .data(ERS_DATA)
+    .join('circle')
+    .attr('cx', d => proj([d.lon, d.lat])[0])
+    .attr('cy', d => proj([d.lon, d.lat])[1])
+    .attr('r', 7)
+    .attr('fill', d => COLORS[d.tech])
+    .attr('stroke', '#ffffff')
+    .attr('stroke-width', 2)
+    .attr('opacity', 0.9)
+    .style('cursor', 'pointer')
+    .style('transition', 'r .1s');
+
+  svgCircles
+    .on('mouseenter', function() { d3.select(this).attr('r', 10); })
+    .on('mouseleave', function() { d3.select(this).attr('r', 7); tooltip.style.display = 'none'; })
+    .on('mousemove', function(event, d) {
+      const rect = mapWrap.getBoundingClientRect();
+      let left = event.clientX - rect.left + 14;
+      let top  = event.clientY - rect.top  - 14;
+      if (left + 180 > rect.width) left = event.clientX - rect.left - 190;
+      tooltip.style.display = 'block';
+      tooltip.style.left = left + 'px';
+      tooltip.style.top  = top  + 'px';
+      document.getElementById('tt-name').textContent = d.name;
+      document.getElementById('tt-name').style.color = COLORS_DARK[d.tech];
+      document.getElementById('tt-sub').textContent = `${d.dept} · ${d.ruta}`;
+      document.getElementById('tt-tech').innerHTML = `Técnico: <span class="tech-badge ${d.tech}" style="font-size:11px">${d.tech}</span>`;
+      document.getElementById('tt-coords').textContent = `${d.lat.toFixed(5)}, ${d.lon.toFixed(5)}`;
+    });
+
+}).catch(() => {
+  document.getElementById('bolivia-map').innerHTML =
+    '<rect width="720" height="740" fill="#d6e8f5"/><text x="360" y="370" text-anchor="middle" font-family="Arial" font-size="15" fill="#666">Error cargando el mapa de Bolivia</text>';
+});
+
+// Bar chart — técnico
+new Chart(document.getElementById('barChart'), {
+  type: 'bar',
+  data: {
+    labels: ['JM', 'RC', 'AG'],
+    datasets: [{
+      label: 'ERS asignadas',
+      data: [9, 9, 9],
+      backgroundColor: ['#378ADD','#EF9F27','#639922'],
+      borderColor:      ['#185FA5','#854F0B','#27500A'],
+      borderWidth: 1.5,
+      borderRadius: 6,
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: { callbacks: { label: ctx => ` ${ctx.raw} ERS` }}
+    },
+    scales: {
+      y: { beginAtZero: true, max: 12, ticks: { stepSize: 3, color:'#888' }, grid: { color:'rgba(0,0,0,0.06)' }},
+      x: { ticks: { color:'#333', font:{ size:13, weight:'700' }}, grid:{ display:false }}
+    }
+  }
+});
+
+// Bar chart — departamento
+const deptCount = {};
+ERS_DATA.forEach(e => { deptCount[e.dept] = (deptCount[e.dept]||0)+1; });
+const depts  = Object.keys(deptCount).sort((a,b) => deptCount[b]-deptCount[a]);
+const dBg    = ['#378ADD','#639922','#EF9F27','#D85A30','#7F77DD','#1D9E75'];
+
+new Chart(document.getElementById('deptChart'), {
+  type: 'bar',
+  data: {
+    labels: depts,
+    datasets: [{
+      label: 'ERS',
+      data: depts.map(d => deptCount[d]),
+      backgroundColor: depts.map((_,i) => dBg[i % dBg.length]),
+      borderRadius: 4, borderWidth: 0,
+    }]
+  },
+  options: {
+    indexAxis: 'y',
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: { callbacks: { label: ctx => ` ${ctx.raw} ERS` }}
+    },
+    scales: {
+      x: { beginAtZero: true, max: 8, ticks: { stepSize: 2, color:'#888' }, grid: { color:'rgba(0,0,0,0.06)' }},
+      y: { ticks: { color:'#555', font:{ size:11 }}, grid: { display: false }}
+    }
+  }
+});
+</script>
+</body>
+</html>
